@@ -1,0 +1,10 @@
+CREATE TABLE Result(
+    RegNo int,
+    Name varchar(255),
+    WrittenExam int,
+    Viva int,
+    Total int
+);
+
+INSERT INTO Result(RegNo, Name, WrittenExam,Viva)
+VALUES(3301,'Umesh',39,21),(3302,'Bikash',54,26),(303,'Neelam,,46,24);
