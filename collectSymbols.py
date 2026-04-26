@@ -3,10 +3,11 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 import time
 
-# Configure Selenium
-service = Service('c:\Windows\chromedriver.exe')
+# Configure Selenium with automatic ChromeDriver management
+service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service)
 
 def scrape_company_symbols():
