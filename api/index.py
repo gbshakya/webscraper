@@ -234,43 +234,45 @@ def health_check():
 # Vercel serverless function entry point
 def handler(request):
     """Main handler for Vercel serverless functions"""
-    initialize_cache()
-    
-    # Parse request method and path from Vercel request
-    method = request.method if hasattr(request, 'method') else 'GET'
-    path = request.path if hasattr(request, 'path') else '/'
-    
-    # Handle query parameters
-    if hasattr(request, 'query') and request.query:
-        # Store query params for use in functions
-        import types
-        request.args = request.query
-    else:
-        request.args = {}
-    
-    print(f"Request: {method} {path}")  # Debug logging
-    
-    # Route the request
-    if path == '/' or path == '':
-        return home()
-    elif path == '/companies':
-        return get_companies()
-    elif path.startswith('/company/'):
-        parts = path.split('/')
-        if len(parts) == 3:
-            return get_company(parts[2])
-        elif len(parts) == 4 and parts[3] == 'live':
-            return get_company_live(parts[2])
-    elif path == '/symbols':
-        return get_symbols()
-    elif path == '/sectors':
-        return get_sectors()
-    elif path == '/health':
-        return health_check()
-    elif path == '/scrape' and method == 'POST':
-        return start_scraping()
-    elif path == '/scrape/status':
-        return get_scrape_status()
-    
-    print(f"Endpoint not found: {path}")  # Debug logging
-    return jsonify({"error": f"Endpoint not found: {path}"}), 404
+    try:
+        initialize_cache()
+        
+        # Parse request from Vercel
+        path = request.get('path', '/')
+        method = request.get('method', 'GET')
+        query_params = request.get('query', {}) or {}
+        
+        print(f"Request: {method} {path}")  # Debug logging
+        
+        # Route the request
+        if path == '/' or path == '':
+            return home()
+        elif path == '/companies':
+            return get_companies()
+        elif path.startswith('/company/'):
+            parts = path.split('/')
+            if len(parts) == 3:
+                return get_company(parts[2])
+            elif len(parts) == 4 and parts[3] == 'live':
+                return get_company_live(parts[2])
+        elif path == '/symbols':
+            return get_symbols()
+        elif path == '/sectors':
+            return get_sectors()
+        elif path == '/health':
+            return health_check()
+        elif path == '/scrape' and method == 'POST':
+            return start_scraping()
+        elif path == '/scrape/status':
+            return get_scrape_status()
+        
+        print(f"Endpoint not found: {path}")  # Debug logging
+        return json_response({"error": f"Endpoint not found: {path}"}, 404)
+            
+    except Exception as e:
+        print(f"Handler error: {str(e)}")
+        return json_response({"error": f"Internal server error: {str(e)}"}, 500)
+
+# Export handler for Vercel
+app = handler  # Vercel expects 'app' variable
+application = handler  # Alternative name for some platforms
