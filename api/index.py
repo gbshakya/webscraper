@@ -265,41 +265,34 @@ def health_check():
     })
 
 # Vercel serverless function entry point
-def lambda_handler(event, context):
-    """AWS Lambda compatible handler for Vercel"""
-    # Convert Vercel event to Flask request format
-    class MockRequest:
-        def __init__(self, event):
-            self.path = event.get('path', '/')
-            self.method = event.get('httpMethod', 'GET')
-            self.args = event.get('queryStringParameters', {}) or {}
-            self.headers = event.get('headers', {}) or {}
-            
-        def get_json(self, silent=False):
-            body = event.get('body')
-            if body and self.headers.get('content-type', '').startswith('application/json'):
-                try:
-                    return json.loads(body)
-                except:
-                    return {}
-            return {}
+def handler(request):
+    """Main handler for Vercel serverless functions"""
+    initialize_cache()
     
-    request = MockRequest(event)
-    response = handler(request)
+    # Parse request method and path
+    method = request.method
+    path = request.path
     
-    # Convert Flask response to Vercel format
-    if isinstance(response, tuple):
-        data, status_code = response
-    else:
-        data, status_code = response, 200
+    # Route the request
+    if path == '/' or path == '':
+        return home()
+    elif path == '/companies':
+        return get_companies()
+    elif path.startswith('/company/'):
+        parts = path.split('/')
+        if len(parts) == 3:
+            return get_company(parts[2])
+        elif len(parts) == 4 and parts[3] == 'live':
+            return get_company_live(parts[2])
+    elif path == '/symbols':
+        return get_symbols()
+    elif path == '/sectors':
+        return get_sectors()
+    elif path == '/health':
+        return health_check()
+    elif path == '/scrape' and method == 'POST':
+        return start_scraping()
+    elif path == '/scrape/status':
+        return get_scrape_status()
     
-    return {
-        'statusCode': status_code,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
-        },
-        'body': json.dumps(data.get_json() if hasattr(data, 'get_json') else data)
-    }
+    return jsonify({"error": "Endpoint not found"}), 404
