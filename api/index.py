@@ -1,5 +1,3 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
 import json
 import os
 from datetime import datetime
@@ -9,13 +7,6 @@ import time
 # Add parent directory to path for imports
 path.append(os.path.dirname(path[0]))
 from collectDataJSON import scrape_company_details
-
-app = Flask(__name__)
-CORS(app)
-
-# Configuration
-SYMBOLS_FILE = 'nepse_symbols.txt'
-JSON_DATA_FILE = 'merolagani_company_info.json'
 
 # In-memory storage for serverless environment
 cached_data = {
@@ -29,7 +20,6 @@ def load_symbols():
     """Load company symbols - in production, this could be from a database or API"""
     try:
         # For Vercel, we'll use hardcoded symbols initially
-        # In production, you might fetch from an external source
         symbols = [
             "NABIL", "NIMB", "SCB", "HBL", "SBI", "EBL", "NICA", "MBL", "LSL", "KBL",
             "SBL", "SHL", "TRH", "OHL", "NHPC", "BPCL", "CHCL", "STC", "BBC", "NUBL",
@@ -55,48 +45,25 @@ def initialize_cache():
             "environment": "serverless"
         }
 
-# API Routes
+def json_response(data, status_code=200):
+    """Create JSON response for Vercel"""
+    return {
+        'statusCode': status_code,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        },
+        'body': json.dumps(data, default=str)
+    }
 
-def handler(request):
-    """Main handler for Vercel serverless functions"""
-    with app.app_context():
-        initialize_cache()
-        
-        # Create Flask request object from Vercel request
-        with app.test_request_context(
-            path=request.path,
-            method=request.method,
-            json=request.get_json(silent=True),
-            args=request.args,
-            headers=request.headers
-        ):
-            # Route the request
-            if request.path == '/' or request.path == '':
-                return home()
-            elif request.path == '/companies':
-                return get_companies()
-            elif request.path.startswith('/company/'):
-                parts = request.path.split('/')
-                if len(parts) == 3:
-                    return get_company(parts[2])
-                elif len(parts) == 4 and parts[3] == 'live':
-                    return get_company_live(parts[2])
-            elif request.path == '/symbols':
-                return get_symbols()
-            elif request.path == '/sectors':
-                return get_sectors()
-            elif request.path == '/health':
-                return health_check()
-            elif request.path == '/scrape' and request.method == 'POST':
-                return start_scraping()
-            elif request.path == '/scrape/status':
-                return get_scrape_status()
-            
-            return jsonify({"error": "Endpoint not found"}), 404
+# API Route Functions
 
 def home():
     """API Home - Basic info and available endpoints"""
-    return jsonify({
+    initialize_cache()
+    return json_response({
         "message": "Nepal Stock Exchange Data API (Serverless)",
         "version": "1.0",
         "environment": "production",
