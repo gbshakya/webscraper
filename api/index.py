@@ -269,9 +269,19 @@ def handler(request):
     """Main handler for Vercel serverless functions"""
     initialize_cache()
     
-    # Parse request method and path
-    method = request.method
-    path = request.path
+    # Parse request method and path from Vercel request
+    method = request.method if hasattr(request, 'method') else 'GET'
+    path = request.path if hasattr(request, 'path') else '/'
+    
+    # Handle query parameters
+    if hasattr(request, 'query') and request.query:
+        # Store query params for use in functions
+        import types
+        request.args = request.query
+    else:
+        request.args = {}
+    
+    print(f"Request: {method} {path}")  # Debug logging
     
     # Route the request
     if path == '/' or path == '':
@@ -295,4 +305,5 @@ def handler(request):
     elif path == '/scrape/status':
         return get_scrape_status()
     
-    return jsonify({"error": "Endpoint not found"}), 404
+    print(f"Endpoint not found: {path}")  # Debug logging
+    return jsonify({"error": f"Endpoint not found: {path}"}), 404
